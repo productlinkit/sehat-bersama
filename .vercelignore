@@ -1,0 +1,6 @@
+node_modules
+dist
+audit-results
+.vercel
+.env.local
+.env*.local
