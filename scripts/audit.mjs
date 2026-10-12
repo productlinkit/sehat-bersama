@@ -27,12 +27,22 @@ for (const vp of [
     if (who === 'user') await page.evaluate(() => localStorage.setItem('sb:user', JSON.stringify({ phone: '08123456789', name: 'Akun Demo' })))
     for (const r of routes) {
       const label = `${vp.name} ${who} ${r}`
-      await page.goto(B + r, { waitUntil: 'load' })
-      await w(700)
-      await axe(page, label)
-      await contrast(page, label)
-      await structure(page, label)
-      if (vp.name === 'mobile') await keyboard(page, label)
+      // Retry once if the page reloads mid-check (e.g. a dev-server reload); a real failure still fails.
+      for (let attempt = 1; ; attempt++) {
+        const before = results.length
+        try {
+          await page.goto(B + r, { waitUntil: 'load' })
+          await w(700)
+          await axe(page, label)
+          await contrast(page, label)
+          await structure(page, label)
+          if (vp.name === 'mobile') await keyboard(page, label)
+          break
+        } catch (e) {
+          results.length = before
+          if (attempt >= 2 || !/context was destroyed|detached/i.test(e.message)) throw e
+        }
+      }
       audited++
       if (['/home', '/packages', '/checkout?pkg=mingguan', '/reward', '/lega', '/account', '/consultation'].includes(r))
         await page.screenshot({ path: `${OUT}${vp.name}-${who}${r.replace(/[\/?=&%]/g, '_')}.png`, fullPage: true })
