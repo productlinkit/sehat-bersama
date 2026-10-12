@@ -22,9 +22,14 @@ export const user = ['/home', '/packages?for=umum', '/checkout?pkg=mingguan', '/
 export const overlays = {
   guest: [['/packages', 'Bandingkan paket'], ['/packages', 'Lihat detail Sehat Mingguan'], ['/home', 'dokter siap sekarang']],
   user: [['/account', 'Keluar dari Akun'], ['/account/addresses', 'Tambah Alamat'], ['/lega', '+ Tulis jurnal'], ['/reward', 'Tukar Potongan Rp 3.000'], ['/consultation/start?type=umum', 'dokter siap sekarang']],
+  // English-mode overlays (same flows, English trigger text)
+  'en-guest': [['/packages', 'Compare plans'], ['/packages', 'See Sehat Mingguan details'], ['/home', 'doctors available now']],
+  'en-user': [['/account', 'Sign out'], ['/account/addresses', 'Add address'], ['/lega', '+ Write entry'], ['/reward', 'Redeem Rp 3,000 off']],
 }
 
+// In Indonesian mode no stray English UI labels; in English mode no stray Indonesian words (brand names excluded).
 const ENGLISH = /\b(Reward|Homecare|Home Lab|Mental Health|Online|Offline|Video Call|Voice Call|Check-in|FAQ|Streak|Gold Tier|Wellness|Mood)\b/
+const INDONESIAN = /\b(yang|dan|untuk|kamu|dengan|dari|atau|sudah|belum|bisa|akan|lihat|masuk|daftar|bantuan|riwayat|pilih|paket|hari|bayar|kembali|tersisa|layanan|perasaan|menit|poin|tukar|selesai|lanjut|simpan|batal|keluar)\b/i
 const EMOJI = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{2B50}]/u
 
 export const w = (ms) => new Promise((r) => setTimeout(r, ms))
@@ -125,19 +130,26 @@ export async function contrast(page, label) {
 
 export async function structure(page, label) {
   const r = await page.evaluate(
-    (en, em) => {
-      const text = document.body.innerText
+    (en, id, em) => {
+      const lang = document.documentElement.lang
+      const names = [...document.querySelectorAll('[aria-label],[placeholder]')].map((e) => `${e.getAttribute('aria-label') ?? ''} ${e.getAttribute('placeholder') ?? ''}`).join(' ')
+      const text = document.body.innerText + ' ' + names
       return {
+        lang,
         h1: document.querySelectorAll('h1').length,
-        english: (text.match(new RegExp(en, 'g')) || []).slice(0, 5),
+        english: lang === 'id' ? (document.body.innerText.match(new RegExp(en, 'g')) || []).slice(0, 5) : [],
+        indonesian: lang === 'en' ? [...new Set((text.match(new RegExp(id, 'gi')) || []).map((s) => s.toLowerCase()))].slice(0, 5) : [],
         emoji: (text.match(new RegExp(em, 'gu')) || []).slice(0, 5),
       }
     },
     ENGLISH.source,
+    INDONESIAN.source,
     EMOJI.source,
   )
   if (r.h1 !== 1) add(label, 'one-h1', `${r.h1} <h1> elements (expected exactly 1)`)
+  if (!['id', 'en'].includes(r.lang)) add(label, 'html-lang', `<html lang="${r.lang}">`)
   if (r.english.length) add(label, 'english-label', `English UI labels: ${r.english.join(', ')}`)
+  if (r.indonesian.length) add(label, 'untranslated', `Indonesian left in English mode: ${r.indonesian.join(', ')}`)
   if (r.emoji.length) add(label, 'emoji-icon', `Emoji rendered: ${r.emoji.join(' ')}`)
 }
 

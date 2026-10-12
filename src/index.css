@@ -129,7 +129,9 @@
 }
 @layer base {
   html, body, #root { min-height: 100%; }
-  body { -webkit-tap-highlight-color: transparent; }
+  body { -webkit-tap-highlight-color: transparent; overflow-wrap: break-word; }
+  /* Long words/IDs break instead of widening the page on 280–320px screens (WCAG 1.4.10 reflow). */
+  h1, h2, h3, p, dd, li, label, summary { overflow-wrap: anywhere; }
 }
 
 /* Space for the fixed mobile bottom nav (and its raised active button). */

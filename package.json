@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test:a11y": "node scripts/audit.mjs",
     "test:e2e": "node scripts/e2e.mjs",
-    "test:a11y:selftest": "node scripts/audit-selftest.mjs"
+    "test:a11y:selftest": "node scripts/audit-selftest.mjs",
+    "test:responsive": "node scripts/responsive.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.11",

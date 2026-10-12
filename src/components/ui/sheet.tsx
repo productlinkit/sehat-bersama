@@ -1,4 +1,5 @@
 import * as React from "react"
+import { CloseLabel } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 import { XIcon } from "lucide-react"
 import { Dialog as SheetPrimitive } from "radix-ui"
@@ -73,9 +74,9 @@ function SheetContent({
       >
         {children}
         {showCloseButton && (
-          <SheetPrimitive.Close className="absolute top-4 right-4 rounded-xs opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none data-[state=open]:bg-secondary">
-            <XIcon className="size-4" />
-            <span className="sr-only">Close</span>
+          <SheetPrimitive.Close className="absolute top-2.5 right-2.5 grid size-10 place-items-center rounded-full text-slate-700 transition-colors hover:bg-slate-100 disabled:pointer-events-none">
+            <XIcon className="size-5" aria-hidden />
+            <CloseLabel />
           </SheetPrimitive.Close>
         )}
       </SheetPrimitive.Content>

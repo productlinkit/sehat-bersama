@@ -33,12 +33,12 @@ export function track(event: FunnelEvent, props?: Record<string, string>) {
   send({ event, at: new Date().toISOString(), props })
 }
 
-export const funnelSteps: { event: FunnelEvent; label: string }[] = [
-  { event: 'package_view', label: 'Lihat Pilih Paket' },
-  { event: 'package_select', label: 'Pilih paket' },
-  { event: 'checkout_view', label: 'Buka pembayaran' },
-  { event: 'payment_success', label: 'Pembayaran berhasil' },
-  { event: 'consultation_start', label: 'Mulai konsultasi' },
+export const funnelSteps: { event: FunnelEvent; label: { id: string; en: string } }[] = [
+  { event: 'package_view', label: { id: 'Lihat Pilih Paket', en: 'Viewed plans' } },
+  { event: 'package_select', label: { id: 'Pilih paket', en: 'Selected a plan' } },
+  { event: 'checkout_view', label: { id: 'Buka pembayaran', en: 'Opened payment' } },
+  { event: 'payment_success', label: { id: 'Pembayaran berhasil', en: 'Payment succeeded' } },
+  { event: 'consultation_start', label: { id: 'Mulai konsultasi', en: 'Started consultation' } },
 ]
 
 export function funnelCounts() {

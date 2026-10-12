@@ -51,6 +51,24 @@ for (const vp of [
       await overlay(page, `${vp.name} ${who} ${route}`, route, trigger)
       audited++
     }
+    // English pass (mobile): every route again with the language switched, plus the overlays.
+    if (vp.name === 'mobile') {
+      await page.evaluate(() => localStorage.setItem('sb:lang', '"en"'))
+      for (const r of routes) {
+        const label = `${vp.name} ${who} [EN] ${r}`
+        await page.goto(B + r, { waitUntil: 'load' })
+        await w(600)
+        await axe(page, label)
+        await contrast(page, label)
+        await structure(page, label)
+        audited++
+      }
+      for (const [route, trigger] of overlays[`en-${who}`]) {
+        await overlay(page, `${vp.name} ${who} [EN] ${route}`, route, trigger)
+        audited++
+      }
+      await page.evaluate(() => localStorage.setItem('sb:lang', '"id"'))
+    }
     if (vp.name === 'mobile') for (const r of ['/home', '/account', '/reward']) {
       if (who === 'user') {
         await page.goto(B + r, { waitUntil: 'load' })

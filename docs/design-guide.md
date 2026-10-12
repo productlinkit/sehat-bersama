@@ -13,6 +13,15 @@ The single reference for copy, naming, and visual tokens. If a screen disagrees 
 - **Indonesian labels first.** Use: Hadiah (not Reward), Kesehatan Mental (not Mental Health), Perawatan di Rumah (not Homecare), Lab di Rumah (not Home Lab), Panggilan Video/Suara (not Video/Voice Call), Cek Perasaan (not Check-in), Tanya Jawab (not FAQ), Layanan Pelanggan (not CS), dokter siap/aktif (not online).
 - **Deliberate brand terms** (kept as-is, always explained): Lega, Lega Pass, AI Co-Pilot, Sehat Harian / Plus / Mingguan / Keluarga. Accepted loanwords: chat, voucher, promo, QRIS and wallet names.
 
+## 1b. Languages (Bahasa Indonesia / English)
+
+- Indonesian is the default; users switch with the **ID / EN** toggle (home header, desktop sidebar, sign-in screens, Akun → Tampilan & Bahasa, Bantuan). The choice is saved on the device.
+- `<html lang>` always matches the active language so screen readers pronounce text correctly (WCAG 3.1.1). Language options are labelled in their own language (`lang="id"` / `lang="en"`).
+- **Adding copy:** in components use `const { t } = useI18n()` and write both versions side by side: `t('Masuk', 'Sign in')`. In data use a bilingual object `{ id: '…', en: '…' }` (type `L`) and render it with `tr(value)`.
+- **Dates and money:** store ISO dates and format with `date(iso, opts)`; prices with `rupiah(n, lang)` → "Rp 15.000" (ID) / "Rp 15,000" (EN).
+- English voice: plain British English, second person ("you"), same tone as "kamu". Brand names stay untranslated (Sehat Harian/Plus/Mingguan/Keluarga, Lega, Lega Pass, AI Co-Pilot).
+- Test both: `npm run test:a11y` runs every route in English too and fails on any Indonesian left in English mode (and English labels left in Indonesian mode).
+
 ## 2. Naming
 
 | Thing | Rule | Example |
@@ -65,6 +74,21 @@ Lega is purple so the mental-health space feels calmer and separate, but it alwa
 - One icon language: the Sehat Bersama duotone set in `src/components/icons.tsx` (48×48, 2.5px rounded strokes in `currentColor`, soft fill via `--icon-fill`) for services, packages, home services, Lega moods and success; Lucide line icons for UI chrome (nav, chevrons, actions).
 - **No emoji as icons.** Emoji render differently per OS and break the stroke system.
 - Tones live in `iconTones` (`src/lib/data.ts`): teal, rose, violet, sky, cyan. Amber is not an illustration colour.
+
+## 6b. Responsive layout
+
+| Width | Layout |
+|---|---|
+| 280–767px (phones, foldables) | single column (max 448px), bottom tab bar |
+| 768–1023px (tablets, landscape phones) | wider column (672px), two-column grids, bottom tab bar |
+| ≥1024px (laptops, desktops) | left sidebar + content (max 768px, or 1152px two-column on wide pages) |
+
+Rules that keep it working at 280px and at the largest text size:
+- Flex rows that hold text use `min-w-0` on the text and `flex-wrap` where a button/chip sits beside it.
+- Repeating icon rows (services, moods, streak) are equal grid columns with `w-full max-w-*` icons, never fixed sizes.
+- Button labels may wrap (`whitespace-normal h-auto min-h-*`); inputs inside flex rows use `w-0 min-w-0 flex-1`.
+- Inputs are 16px on every device (no iOS auto-zoom). Text links get `touchLink` (≥24px tall).
+- `npm run test:responsive` checks 26 device/language profiles for horizontal scroll, off-screen/clipped text, overlapping or small targets, chrome height and wasted space.
 
 ## 7. Navigation
 

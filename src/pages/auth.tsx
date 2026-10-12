@@ -8,12 +8,26 @@ import { Input } from '@/components/ui/input'
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp'
 import { Label } from '@/components/ui/label'
 import { Field, FormError, PasswordInput, inputCls } from '@/components/form'
-import { AppShell, BackButton, Logo, PageHeader } from '@/components/layout'
-import { PHONE_RE, useAuth } from '@/lib/auth'
+import { AppShell, BackButton, LanguageToggle, Logo, PageHeader, touchLink } from '@/components/layout'
+import { PHONE_RE, useAuth, type AuthError } from '@/lib/auth'
 import { findProduct, rupiah } from '@/lib/data'
+import { useI18n } from '@/lib/i18n'
 
-const phoneError = (v: string) =>
-  !v ? 'Nomor HP wajib diisi.' : !PHONE_RE.test(v) ? 'Nomor HP harus diawali 08 dan berisi 10–13 angka.' : ''
+type T = ReturnType<typeof useI18n>['t']
+
+const phoneError = (v: string, t: T) =>
+  !v
+    ? t('Nomor HP wajib diisi.', 'Enter your phone number.')
+    : !PHONE_RE.test(v)
+      ? t('Nomor HP harus diawali 08 dan berisi 10–13 angka.', 'Phone number must start with 08 and have 10–13 digits.')
+      : ''
+
+const authErrorText = (code: string, t: T) =>
+  ({
+    'invalid-phone': t('Format nomor HP tidak valid.', 'That phone number format isn’t valid.'),
+    'wrong-credentials': t('Nomor HP atau kata sandi salah.', 'Phone number or password is incorrect.'),
+    'weak-password': t('Kata sandi minimal 8 karakter.', 'Password must be at least 8 characters.'),
+  })[code as AuthError] ?? t('Terjadi kesalahan. Coba lagi.', 'Something went wrong. Please try again.')
 
 /** Pulls the chosen package out of a redirect like /checkout?pkg=harian. */
 function productFromRedirect(redirect: string) {
@@ -26,18 +40,22 @@ function productFromRedirect(redirect: string) {
 }
 
 function AuthLayout({ title, subtitle, redirect, children }: { title: string; subtitle: string; redirect: string; children: ReactNode }) {
+  const { t, tr, lang } = useI18n()
   const product = productFromRedirect(redirect)
   return (
     <AppShell>
-      <div className="flex items-center justify-between px-4 pt-4">
-        <BackButton label="Kembali ke halaman sebelumnya" />
-        <Button asChild variant="ghost" size="sm" className="rounded-full">
-          <Link to="/help">
-            <HelpCircle aria-hidden /> Bantuan
-          </Link>
-        </Button>
+      <div className="flex items-center justify-between gap-2 px-3 pt-4 min-[360px]:px-4">
+        <BackButton label={t('Kembali ke halaman sebelumnya', 'Back to previous page')} />
+        <div className="flex items-center gap-1">
+          <LanguageToggle compact />
+          <Button asChild variant="ghost" size="sm" className="h-9 rounded-full px-2.5">
+            <Link to="/help">
+              <HelpCircle aria-hidden /> <span className="max-[339px]:sr-only">{t('Bantuan', 'Help')}</span>
+            </Link>
+          </Button>
+        </div>
       </div>
-      <div className="mx-auto max-w-md px-6 pt-4 pb-10">
+      <div className="mx-auto max-w-md px-5 pt-4 pb-10 min-[360px]:px-6">
         <Logo />
         <h1 className="mt-10 text-3xl font-extrabold tracking-tight">{title}</h1>
         <p className="text-muted-foreground mt-2">{subtitle}</p>
@@ -45,7 +63,9 @@ function AuthLayout({ title, subtitle, redirect, children }: { title: string; su
           <div className="mt-6 flex items-center gap-3 rounded-2xl border border-emerald-300 bg-emerald-50 p-4">
             <ShoppingBag className="size-5 shrink-0 text-teal-800" aria-hidden />
             <p className="text-sm text-teal-900">
-              Kamu memilih <b>{product.name}</b> · {rupiah(product.price)}. Setelah masuk, kamu langsung lanjut ke pembayaran.
+              {t('Kamu memilih ', 'You chose ')}
+              <b>{tr(product.name)}</b> · {rupiah(product.price, lang)}.{' '}
+              {t('Setelah masuk, kamu langsung lanjut ke pembayaran.', 'After signing in, you’ll go straight to payment.')}
             </p>
           </div>
         )}
@@ -55,10 +75,11 @@ function AuthLayout({ title, subtitle, redirect, children }: { title: string; su
   )
 }
 
-const submitCls = 'h-12 w-full rounded-xl text-base font-semibold'
+const submitCls = 'h-auto min-h-12 w-full rounded-xl text-base font-semibold whitespace-normal'
 
 export function LoginPage() {
   const { user, login } = useAuth()
+  const { t } = useI18n()
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const redirect = params.get('redirect') || '/home'
@@ -71,8 +92,8 @@ export function LoginPage() {
   if (user) return <Navigate to={redirect} replace />
 
   const errors = {
-    phone: phoneError(phone),
-    password: password ? '' : 'Kata sandi wajib diisi.',
+    phone: phoneError(phone, t),
+    password: password ? '' : t('Kata sandi wajib diisi.', 'Enter your password.'),
   }
 
   const submit = async (e: FormEvent) => {
@@ -83,10 +104,10 @@ export function LoginPage() {
     setLoading(true)
     try {
       await login(phone, password)
-      toast.success('Berhasil masuk')
+      toast.success(t('Berhasil masuk', 'Signed in'))
       navigate(redirect, { replace: true })
     } catch (err) {
-      setError((err as Error).message)
+      setError(authErrorText((err as Error).message, t))
     } finally {
       setLoading(false)
     }
@@ -95,9 +116,9 @@ export function LoginPage() {
   const carry = new URLSearchParams({ redirect, ...(phone && { phone }) }).toString()
 
   return (
-    <AuthLayout title="Masuk ke akunmu" subtitle="Masuk dengan nomor HP dan kata sandimu." redirect={redirect}>
+    <AuthLayout title={t('Masuk ke akunmu', 'Sign in to your account')} subtitle={t('Masuk dengan nomor HP dan kata sandimu.', 'Use your phone number and password.')} redirect={redirect}>
       <form onSubmit={submit} noValidate className="space-y-5">
-        <Field label="Nomor HP" hint="Format nomor Indonesia, contoh 081234567890" error={touched.phone ? errors.phone : ''}>
+        <Field label={t('Nomor HP', 'Phone number')} hint={t('Format nomor Indonesia, contoh 081234567890', 'Indonesian format, e.g. 081234567890')} error={touched.phone ? errors.phone : ''}>
           {(f) => (
             <Input
               {...f}
@@ -107,35 +128,35 @@ export function LoginPage() {
               placeholder="0812..."
               value={phone}
               onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
-              onBlur={() => setTouched((t) => ({ ...t, phone: true }))}
+              onBlur={() => setTouched((v) => ({ ...v, phone: true }))}
               className={inputCls}
               required
             />
           )}
         </Field>
-        <Field label="Kata Sandi" error={touched.password ? errors.password : ''}>
+        <Field label={t('Kata Sandi', 'Password')} error={touched.password ? errors.password : ''}>
           {(f) => (
             <PasswordInput
               {...f}
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              onBlur={() => setTouched((t) => ({ ...t, password: true }))}
+              onBlur={() => setTouched((v) => ({ ...v, password: true }))}
               required
             />
           )}
         </Field>
         <div className="text-right">
-          <Link to={`/forgot-password?${carry}`} className="text-primary rounded px-1 text-sm font-semibold">
-            Lupa kata sandi?
+          <Link to={`/forgot-password?${carry}`} className={touchLink}>
+            {t('Lupa kata sandi?', 'Forgot password?')}
           </Link>
         </div>
         <FormError>{error}</FormError>
         <Button type="submit" className={submitCls} disabled={loading}>
-          {loading && <Loader2 className="animate-spin" aria-hidden />} Masuk
+          {loading && <Loader2 className="animate-spin" aria-hidden />} {t('Masuk', 'Sign in')}
         </Button>
         <Button asChild variant="outline" className={submitCls}>
-          <Link to={`/register?${carry}`}>Belum punya akun? Daftar</Link>
+          <Link to={`/register?${carry}`}>{t('Belum punya akun? Daftar', 'No account yet? Sign up')}</Link>
         </Button>
       </form>
     </AuthLayout>
@@ -144,6 +165,7 @@ export function LoginPage() {
 
 export function RegisterPage() {
   const { user, register } = useAuth()
+  const { t } = useI18n()
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const redirect = params.get('redirect') || '/home'
@@ -156,13 +178,13 @@ export function RegisterPage() {
   if (user) return <Navigate to={redirect} replace />
 
   const errors = {
-    name: form.name.trim().length >= 2 ? '' : 'Isi nama lengkapmu sesuai identitas.',
-    phone: phoneError(form.phone),
-    password: form.password.length >= 8 ? '' : 'Kata sandi minimal 8 karakter.',
-    consent: consent ? '' : 'Kamu perlu menyetujui Syarat & Ketentuan dan Kebijakan Privasi.',
+    name: form.name.trim().length >= 2 ? '' : t('Isi nama lengkapmu sesuai identitas.', 'Enter your full name as on your ID.'),
+    phone: phoneError(form.phone, t),
+    password: form.password.length >= 8 ? '' : t('Kata sandi minimal 8 karakter.', 'Password must be at least 8 characters.'),
+    consent: consent ? '' : t('Kamu perlu menyetujui Syarat & Ketentuan dan Kebijakan Privasi.', 'Please accept the Terms & Conditions and Privacy Policy.'),
   }
   const show = (k: keyof typeof errors) => (touched[k] ? errors[k] : '')
-  const blur = (k: string) => () => setTouched((t) => ({ ...t, [k]: true }))
+  const blur = (k: string) => () => setTouched((v) => ({ ...v, [k]: true }))
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
@@ -172,10 +194,10 @@ export function RegisterPage() {
     setLoading(true)
     try {
       await register(form.name.trim(), form.phone, form.password)
-      toast.success('Akun berhasil dibuat')
+      toast.success(t('Akun berhasil dibuat', 'Account created'))
       navigate(redirect, { replace: true })
     } catch (err) {
-      setError((err as Error).message)
+      setError(authErrorText((err as Error).message, t))
     } finally {
       setLoading(false)
     }
@@ -184,14 +206,14 @@ export function RegisterPage() {
   const carry = new URLSearchParams({ redirect, ...(form.phone && { phone: form.phone }) }).toString()
 
   return (
-    <AuthLayout title="Buat akun baru" subtitle="Daftar dengan nomor HP untuk mulai konsultasi." redirect={redirect}>
+    <AuthLayout title={t('Buat akun baru', 'Create an account')} subtitle={t('Daftar dengan nomor HP untuk mulai konsultasi.', 'Sign up with your phone number to start consulting.')} redirect={redirect}>
       <form onSubmit={submit} noValidate className="space-y-5">
-        <Field label="Nama lengkap" error={show('name')}>
+        <Field label={t('Nama lengkap', 'Full name')} error={show('name')}>
           {(f) => (
             <Input
               {...f}
               autoComplete="name"
-              placeholder="Nama sesuai identitas"
+              placeholder={t('Nama sesuai identitas', 'Name as on your ID')}
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               onBlur={blur('name')}
@@ -200,7 +222,7 @@ export function RegisterPage() {
             />
           )}
         </Field>
-        <Field label="Nomor HP" hint="Format nomor Indonesia, contoh 081234567890" error={show('phone')}>
+        <Field label={t('Nomor HP', 'Phone number')} hint={t('Format nomor Indonesia, contoh 081234567890', 'Indonesian format, e.g. 081234567890')} error={show('phone')}>
           {(f) => (
             <Input
               {...f}
@@ -216,7 +238,7 @@ export function RegisterPage() {
             />
           )}
         </Field>
-        <Field label="Kata Sandi" hint="Minimal 8 karakter, gabungan huruf dan angka." error={show('password')}>
+        <Field label={t('Kata Sandi', 'Password')} hint={t('Minimal 8 karakter, gabungan huruf dan angka.', 'At least 8 characters, with letters and numbers.')} error={show('password')}>
           {(f) => (
             <PasswordInput
               {...f}
@@ -235,22 +257,25 @@ export function RegisterPage() {
               checked={consent}
               onCheckedChange={(v) => {
                 setConsent(v === true)
-                setTouched((t) => ({ ...t, consent: true }))
+                setTouched((x) => ({ ...x, consent: true }))
               }}
               aria-invalid={show('consent') ? true : undefined}
               aria-describedby={show('consent') ? 'consent-error' : undefined}
-              className="mt-0.5 size-5"
+              className="mt-0.5"
             />
             <Label htmlFor="consent" className="block text-sm leading-relaxed font-normal">
-              Saya menyetujui{' '}
+              {t('Saya menyetujui ', 'I agree to the ')}
               <Link to="/terms" target="_blank" className="text-primary font-semibold underline">
-                Syarat & Ketentuan
-              </Link>{' '}
-              dan{' '}
-              <Link to="/privacy-policy" target="_blank" className="text-primary font-semibold underline">
-                Kebijakan Privasi
+                {t('Syarat & Ketentuan', 'Terms & Conditions')}
               </Link>
-              , termasuk pemrosesan data kesehatan saya sesuai UU PDP No. 27/2022.
+              {t(' dan ', ' and ')}
+              <Link to="/privacy-policy" target="_blank" className="text-primary font-semibold underline">
+                {t('Kebijakan Privasi', 'Privacy Policy')}
+              </Link>
+              {t(
+                ', termasuk pemrosesan data kesehatan saya sesuai UU PDP No. 27/2022.',
+                ', including processing of my health data under Indonesia’s Personal Data Protection Law (No. 27/2022).',
+              )}
             </Label>
           </div>
           {show('consent') && (
@@ -261,10 +286,10 @@ export function RegisterPage() {
         </div>
         <FormError>{error}</FormError>
         <Button type="submit" className={submitCls} disabled={loading}>
-          {loading && <Loader2 className="animate-spin" aria-hidden />} Daftar
+          {loading && <Loader2 className="animate-spin" aria-hidden />} {t('Daftar', 'Sign up')}
         </Button>
         <Button asChild variant="outline" className={submitCls}>
-          <Link to={`/login?${carry}`}>Sudah punya akun? Masuk</Link>
+          <Link to={`/login?${carry}`}>{t('Sudah punya akun? Masuk', 'Already have an account? Sign in')}</Link>
         </Button>
       </form>
     </AuthLayout>
@@ -274,6 +299,7 @@ export function RegisterPage() {
 const DEMO_OTP = '123456'
 
 export function ForgotPasswordPage() {
+  const { t } = useI18n()
   const [params] = useSearchParams()
   const navigate = useNavigate()
   const [step, setStep] = useState<'phone' | 'otp' | 'password' | 'done'>('phone')
@@ -285,23 +311,28 @@ export function ForgotPasswordPage() {
 
   useEffect(() => {
     if (cooldown <= 0) return
-    const t = setTimeout(() => setCooldown((c) => c - 1), 1000)
-    return () => clearTimeout(t)
+    const id = setTimeout(() => setCooldown((c) => c - 1), 1000)
+    return () => clearTimeout(id)
   }, [cooldown])
 
   const steps = { phone: 1, otp: 2, password: 3, done: 3 }
 
   return (
     <AppShell nav={false}>
-      <PageHeader title="Atur Ulang Kata Sandi" subtitle={step !== 'done' ? `Langkah ${steps[step]} dari 3` : undefined} back="/login" />
-      <div className="mx-auto max-w-md p-6">
+      <PageHeader
+        title={t('Atur Ulang Kata Sandi', 'Reset Password')}
+        subtitle={step !== 'done' ? t(`Langkah ${steps[step]} dari 3`, `Step ${steps[step]} of 3`) : undefined}
+        back="/login"
+        right={<LanguageToggle compact />}
+      />
+      <div className="mx-auto max-w-md p-5 min-[360px]:p-6">
         {step === 'phone' && (
           <form
             noValidate
             className="space-y-5"
             onSubmit={(e) => {
               e.preventDefault()
-              const err = phoneError(phone)
+              const err = phoneError(phone, t)
               setError(err)
               if (!err) {
                 setStep('otp')
@@ -309,8 +340,10 @@ export function ForgotPasswordPage() {
               }
             }}
           >
-            <p className="text-muted-foreground">Masukkan nomor HP yang terdaftar. Kami kirim kode OTP lewat SMS/WhatsApp.</p>
-            <Field label="Nomor HP" hint="Contoh 081234567890" error={error}>
+            <p className="text-muted-foreground">
+              {t('Masukkan nomor HP yang terdaftar. Kami kirim kode OTP lewat SMS/WhatsApp.', 'Enter your registered phone number. We’ll send a one-time code by SMS/WhatsApp.')}
+            </p>
+            <Field label={t('Nomor HP', 'Phone number')} hint={t('Contoh 081234567890', 'e.g. 081234567890')} error={error}>
               {(f) => (
                 <Input
                   {...f}
@@ -325,7 +358,7 @@ export function ForgotPasswordPage() {
               )}
             </Field>
             <Button type="submit" className={submitCls}>
-              Kirim Kode OTP
+              {t('Kirim Kode OTP', 'Send code')}
             </Button>
           </form>
         )}
@@ -335,17 +368,18 @@ export function ForgotPasswordPage() {
             className="space-y-5"
             onSubmit={(e) => {
               e.preventDefault()
-              if (otp !== DEMO_OTP) return setError('Kode OTP salah. Periksa lagi atau kirim ulang kode.')
+              if (otp !== DEMO_OTP) return setError(t('Kode OTP salah. Periksa lagi atau kirim ulang kode.', 'That code is incorrect. Check it or send a new one.'))
               setError('')
               setStep('password')
             }}
           >
             <p className="text-muted-foreground">
-              Masukkan 6 digit kode yang kami kirim ke <b className="text-foreground">{phone}</b>.
+              {t('Masukkan 6 digit kode yang kami kirim ke ', 'Enter the 6-digit code we sent to ')}
+              <b className="text-foreground">{phone}</b>.
             </p>
             <div className="space-y-2">
               <Label htmlFor="otp" className="font-semibold">
-                Kode OTP
+                {t('Kode OTP', 'One-time code')}
               </Label>
               <InputOTP
                 id="otp"
@@ -354,15 +388,16 @@ export function ForgotPasswordPage() {
                 onChange={setOtp}
                 aria-invalid={error ? true : undefined}
                 aria-describedby={error ? 'otp-error otp-hint' : 'otp-hint'}
+                containerClassName="w-full"
               >
-                <InputOTPGroup>
+                <InputOTPGroup className="w-full">
                   {Array.from({ length: 6 }, (_, i) => (
-                    <InputOTPSlot key={i} index={i} className="size-12 text-lg" />
+                    <InputOTPSlot key={i} index={i} className="aspect-square h-auto max-w-12 flex-1 text-lg" />
                   ))}
                 </InputOTPGroup>
               </InputOTP>
               <p id="otp-hint" className="text-muted-foreground text-[13px]">
-                Mode demo: gunakan kode {DEMO_OTP}.
+                {t(`Mode demo: gunakan kode ${DEMO_OTP}.`, `Demo mode: use code ${DEMO_OTP}.`)}
               </p>
               {error && (
                 <p id="otp-error" role="alert" className="text-[13px] font-medium text-red-700">
@@ -371,19 +406,19 @@ export function ForgotPasswordPage() {
               )}
             </div>
             <Button type="submit" className={submitCls} disabled={otp.length < 6}>
-              Verifikasi
+              {t('Verifikasi', 'Verify')}
             </Button>
             <Button
               type="button"
               variant="ghost"
-              className="w-full"
+              className="h-auto min-h-10 w-full whitespace-normal"
               disabled={cooldown > 0}
               onClick={() => {
                 setCooldown(60)
-                toast.success('Kode OTP baru sudah dikirim')
+                toast.success(t('Kode OTP baru sudah dikirim', 'A new code has been sent'))
               }}
             >
-              {cooldown > 0 ? `Kirim ulang kode dalam ${cooldown} detik` : 'Kirim ulang kode'}
+              {cooldown > 0 ? t(`Kirim ulang kode dalam ${cooldown} detik`, `Resend code in ${cooldown}s`) : t('Kirim ulang kode', 'Resend code')}
             </Button>
           </form>
         )}
@@ -394,20 +429,20 @@ export function ForgotPasswordPage() {
             className="space-y-5"
             onSubmit={(e) => {
               e.preventDefault()
-              if (pw.next.length < 8) return setError('Kata sandi minimal 8 karakter.')
-              if (pw.next !== pw.confirm) return setError('Konfirmasi kata sandi belum sama.')
+              if (pw.next.length < 8) return setError(t('Kata sandi minimal 8 karakter.', 'Password must be at least 8 characters.'))
+              if (pw.next !== pw.confirm) return setError(t('Konfirmasi kata sandi belum sama.', 'The passwords don’t match.'))
               setError('')
               setStep('done')
             }}
           >
-            <Field label="Kata sandi baru" hint="Minimal 8 karakter, gabungan huruf dan angka.">
+            <Field label={t('Kata sandi baru', 'New password')} hint={t('Minimal 8 karakter, gabungan huruf dan angka.', 'At least 8 characters, with letters and numbers.')}>
               {(f) => <PasswordInput {...f} autoComplete="new-password" value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value })} />}
             </Field>
-            <Field label="Ulangi kata sandi baru" error={error}>
+            <Field label={t('Ulangi kata sandi baru', 'Confirm new password')} error={error}>
               {(f) => <PasswordInput {...f} autoComplete="new-password" value={pw.confirm} onChange={(e) => setPw({ ...pw, confirm: e.target.value })} />}
             </Field>
             <Button type="submit" className={submitCls}>
-              Simpan Kata Sandi
+              {t('Simpan Kata Sandi', 'Save password')}
             </Button>
           </form>
         )}
@@ -415,10 +450,10 @@ export function ForgotPasswordPage() {
         {step === 'done' && (
           <div className="space-y-5 text-center" role="status">
             <CheckCircle2 className="text-primary mx-auto size-16" aria-hidden />
-            <h2 className="text-xl font-bold">Kata sandi berhasil diganti</h2>
-            <p className="text-muted-foreground">Silakan masuk dengan kata sandi barumu.</p>
+            <h2 className="text-xl font-bold">{t('Kata sandi berhasil diganti', 'Password changed')}</h2>
+            <p className="text-muted-foreground">{t('Silakan masuk dengan kata sandi barumu.', 'Sign in with your new password.')}</p>
             <Button className={submitCls} onClick={() => navigate(`/login?phone=${phone}`)}>
-              Masuk Sekarang
+              {t('Masuk Sekarang', 'Sign in now')}
             </Button>
           </div>
         )}

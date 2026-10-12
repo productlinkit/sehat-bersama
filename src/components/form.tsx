@@ -2,6 +2,7 @@ import { useId, useState, type ReactNode } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
 export const inputCls = 'h-12 rounded-xl bg-white text-base'
@@ -53,13 +54,14 @@ export function Field({
 
 export function PasswordInput({ className, ...props }: React.ComponentProps<typeof Input>) {
   const [show, setShow] = useState(false)
+  const { t } = useI18n()
   return (
     <div className="relative">
       <Input {...props} type={show ? 'text' : 'password'} className={cn(inputCls, 'pr-12', className)} />
       <button
         type="button"
         onClick={() => setShow((s) => !s)}
-        aria-label="Tampilkan kata sandi"
+        aria-label={t('Tampilkan kata sandi', 'Show password')}
         aria-pressed={show}
         aria-controls={props.id}
         className="text-muted-foreground absolute inset-y-0 right-1 my-auto grid size-10 place-items-center rounded-lg"

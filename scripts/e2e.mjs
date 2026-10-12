@@ -279,6 +279,40 @@ for (const r of ['/home', '/packages', '/lega', '/login', '/register']) {
   check(`type floor ≥12px on ${r}`, small.length === 0)
 }
 
+// ---- Language toggle (Bahasa Indonesia / English)
+await page.evaluate(() => localStorage.setItem('sb:user', JSON.stringify({ phone: '08123456789', name: 'Akun Demo' })))
+await page.goto(B + '/home')
+await w(500)
+check('default language is Indonesian (html lang="id")', await page.evaluate(() => document.documentElement.lang === 'id'))
+check('language toggle is a labelled radio group on home', await page.evaluate(() => {
+  const g = document.querySelector('[role=radiogroup][aria-label="Bahasa"]')
+  return !!g && [...g.querySelectorAll('[role=radio]')].map((r) => r.textContent).join() === 'ID,EN'
+}))
+await page.evaluate(() => document.querySelector('[role=radio][aria-label="English"]').click())
+await w(300)
+check('switching to EN updates <html lang> and the UI', await page.evaluate(() => document.documentElement.lang === 'en' && document.body.innerText.includes('Popular Services')))
+check('EN: bottom nav labels translated', await page.evaluate(() => {
+  const nav = [...document.querySelectorAll('nav')].find((n) => getComputedStyle(n).display !== 'none')
+  return ['Home', 'History', 'Rewards', 'Account'].every((l) => nav.innerText.includes(l))
+}))
+await page.reload()
+await w(500)
+check('language choice persists after reload', await page.evaluate(() => document.documentElement.lang === 'en'))
+await page.goto(B + '/packages')
+await w(400)
+check('EN: prices use English number format (Rp 15,000)', (await text()).includes('Rp 15,000') && (await text()).includes('Choose a Plan'))
+await page.goto(B + '/history')
+await w(400)
+check('EN: dates formatted in English', (await text()).includes('Oct 2026'))
+await page.goto(B + '/article/kenali-gejala-demam-berdarah')
+await w(400)
+check('EN: article content translated', (await text()).includes('Spotting the Early Signs of Dengue Fever'))
+await page.goto(B + '/account/display')
+await w(400)
+await page.evaluate(() => [...document.querySelectorAll('[role=radio]')].find((r) => r.textContent.includes('Bahasa Indonesia')).click())
+await w(300)
+check('switch back to Indonesian from Akun → Tampilan & Bahasa', await page.evaluate(() => document.documentElement.lang === 'id' && document.body.innerText.includes('Tampilan & Bahasa')))
+
 // ---- Desktop breakpoint
 await page.evaluate(() => localStorage.setItem('sb:user', JSON.stringify({ phone: '08123456789', name: 'Akun Demo' })))
 await page.setViewport({ width: 1440, height: 900 })

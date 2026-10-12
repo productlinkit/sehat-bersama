@@ -19,6 +19,7 @@ import {
 } from '@/pages/account'
 import { CheckoutPage, PaymentSuccessPage } from '@/pages/checkout'
 import { TextSizeProvider } from '@/lib/prefs'
+import { I18nProvider, useI18n } from '@/lib/i18n'
 import { ConsultationPage, PrescriptionsPage } from '@/pages/consultation'
 import { HomePage } from '@/pages/home'
 import { LegaChatPage, LegaPage } from '@/pages/lega'
@@ -31,14 +32,15 @@ import { ConsultationStartPage, HomeServicesPage, TriagePage } from '@/pages/ser
 const p = (el: ReactNode) => <RequireAuth>{el}</RequireAuth>
 
 function NotFound() {
+  const { t } = useI18n()
   return (
     <AppShell nav={false}>
       <div className="grid min-h-dvh place-items-center p-6 text-center">
         <div>
           <h1 className="text-primary text-6xl font-extrabold">404</h1>
-          <p className="text-muted-foreground mt-2">Halaman tidak ditemukan.</p>
+          <p className="text-muted-foreground mt-2">{t('Halaman tidak ditemukan.', 'Page not found.')}</p>
           <Button asChild className="mt-6 rounded-full">
-            <Link to="/home">Kembali ke Beranda</Link>
+            <Link to="/home">{t('Kembali ke Beranda', 'Back to Home')}</Link>
           </Button>
         </div>
       </div>
@@ -48,6 +50,7 @@ function NotFound() {
 
 export default function App() {
   return (
+    <I18nProvider>
     <AuthProvider>
       <TextSizeProvider>
         <BrowserRouter>
@@ -97,5 +100,6 @@ export default function App() {
         <Toaster position="top-center" richColors />
       </TextSizeProvider>
     </AuthProvider>
+    </I18nProvider>
   )
 }

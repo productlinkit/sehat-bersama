@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Pause, Play } from 'lucide-react'
+import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
 const prefersReducedMotion = () =>
@@ -14,6 +15,7 @@ export function Carousel({ label, slides, interval = 5000 }: { label: string; sl
   const [index, setIndex] = useState(0)
   const [playing, setPlaying] = useState(() => !prefersReducedMotion())
   const [hovered, setHovered] = useState(false)
+  const { t } = useI18n()
 
   // Stop autoplay as soon as the user turns on reduced motion (WCAG 2.2.2).
   useEffect(() => {
@@ -50,7 +52,7 @@ export function Carousel({ label, slides, interval = 5000 }: { label: string; sl
               key={i}
               role="group"
               aria-roledescription="slide"
-              aria-label={`${i + 1} dari ${slides.length}`}
+              aria-label={t(`${i + 1} dari ${slides.length}`, `${i + 1} of ${slides.length}`)}
               aria-hidden={i !== index}
               inert={i !== index}
               className="w-full shrink-0"
@@ -64,7 +66,7 @@ export function Carousel({ label, slides, interval = 5000 }: { label: string; sl
         <button
           type="button"
           onClick={() => setPlaying((p) => !p)}
-          aria-label={playing ? 'Jeda promo otomatis' : 'Putar promo otomatis'}
+          aria-label={playing ? t('Jeda promo otomatis', 'Pause promotions') : t('Putar promo otomatis', 'Play promotions')}
           className="grid size-8 place-items-center rounded-full text-slate-600 hover:bg-slate-200"
         >
           {playing ? <Pause className="size-4" aria-hidden /> : <Play className="size-4" aria-hidden />}
@@ -74,7 +76,7 @@ export function Carousel({ label, slides, interval = 5000 }: { label: string; sl
             key={i}
             type="button"
             onClick={() => setIndex(i)}
-            aria-label={`Promo ${i + 1}`}
+            aria-label={t(`Promo ${i + 1}`, `Promotion ${i + 1}`)}
             aria-current={i === index ? 'true' : undefined}
             className="grid size-8 place-items-center rounded-full"
           >

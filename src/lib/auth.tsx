@@ -21,21 +21,25 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 
 export const PHONE_RE = /^08\d{8,11}$/
 
+/** Error codes thrown by login/register; the UI translates them. */
+export type AuthError = 'invalid-phone' | 'wrong-credentials' | 'weak-password'
+
 // Mock auth. Replace the bodies of login/register with real API calls.
+// Errors are thrown as codes (Error.message = AuthError) so the UI can show them in the user's language.
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = usePersistentState<User | null>('sb:user', null)
 
   const login = async (phone: string, password: string) => {
     await new Promise((r) => setTimeout(r, 400))
-    if (!PHONE_RE.test(phone)) throw new Error('Format nomor HP tidak valid.')
-    if (password.length < 6) throw new Error('Nomor HP atau kata sandi salah.')
+    if (!PHONE_RE.test(phone)) throw new Error('invalid-phone' satisfies AuthError)
+    if (password.length < 6) throw new Error('wrong-credentials' satisfies AuthError)
     setUser({ phone, name: 'Akun Demo' })
   }
 
   const register = async (name: string, phone: string, password: string) => {
     await new Promise((r) => setTimeout(r, 400))
-    if (!PHONE_RE.test(phone)) throw new Error('Format nomor HP tidak valid.')
-    if (password.length < 8) throw new Error('Kata sandi minimal 8 karakter.')
+    if (!PHONE_RE.test(phone)) throw new Error('invalid-phone' satisfies AuthError)
+    if (password.length < 8) throw new Error('weak-password' satisfies AuthError)
     setUser({ phone, name })
   }
 

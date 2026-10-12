@@ -1,6 +1,7 @@
 # Sehat Bersama (web)
 
 Mobile-first telehealth web app: doctor chat, child consults, Lega (mental-health companion), home services, packages, rewards.
+Bilingual (Bahasa Indonesia / English) and responsive from 280px foldables to 2560px desktops.
 React 19 · Vite · TypeScript · Tailwind CSS v4 · shadcn/ui · React Router.
 
 > **Demo build.** Login, payments, doctor/Lega replies and doctor availability are mocked (`src/lib/data.ts`, `src/lib/auth.tsx`).
@@ -25,7 +26,8 @@ Needs Google Chrome and the dev server running (`BASE` defaults to `http://local
 ```bash
 npm run test:a11y           # axe-core WCAG 2.2 AA + contrast, focus-return, one-h1, nav-overlap, keyboard checks on every route
 npm run test:a11y:selftest  # proves the audit catches each known defect
-npm run test:e2e            # end-to-end checks for the UI/UX evaluation findings
+npm run test:e2e            # end-to-end checks for the UI/UX evaluation findings and the language toggle
+npm run test:responsive     # 26 device/language profiles: overflow, clipped text, tap targets, layout
 ```
 
 Set `CHROME_PATH` if Chrome isn't at the default macOS location.
